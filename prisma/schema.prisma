@@ -1,0 +1,120 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model Vk {
+  id          Int     @id
+  name        String
+  nickname    String
+  screen_name String
+  first_name  String
+  last_name   String
+  email       String?
+
+  user   User? @relation(fields: [userId], references: [id])
+  userId Int?  @unique
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  username String @unique
+  password String
+
+  phone String?
+
+  email_confirmed    DateTime?
+  email_confirm_code String?
+
+  updated_at DateTime @default(now())
+  created_at DateTime @default(now())
+  role       Role     @default(USER)
+
+  orders Order[]
+
+  vk Vk?
+}
+
+model Category {
+  id    Int    @id @default(autoincrement())
+  title String
+
+  food Food[]
+}
+
+model Food {
+  id          Int    @id @default(autoincrement())
+  title       String
+  description String
+  price       Int
+
+  thumbnail   Image?  @relation(fields: [thumbnailId], references: [id])
+  thumbnailId String?
+
+  in_orders  FoodToOrder[]
+  categories Category[]
+
+}
+
+model FoodToOrder {
+  food    Food  @relation(fields: [foodId], references: [id], onDelete: Cascade)
+  foodId  Int
+  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId Int
+
+  count Int @default(1)
+
+  updated_at DateTime @default(now())
+  created_at DateTime @default(now())
+
+  @@id([foodId, orderId])
+}
+
+enum OrderStatus {
+  IN_PROCESSING
+  COOKING
+  DELIVERING
+  DONE
+  CANCELED
+}
+
+model Order {
+  id Int @id @default(autoincrement())
+
+  address String
+  phone   String?
+  name    String?
+  paid    Boolean     @default(false)
+  status  OrderStatus @default(IN_PROCESSING)
+
+  user   User? @relation(fields: [userId], references: [id])
+  userId Int?
+
+  food_list FoodToOrder[]
+
+  updated_at DateTime @default(now())
+  created_at DateTime @default(now())
+}
+
+model Image {
+  id       String @id @default(cuid())
+  filename String @unique
+  filepath String
+  mimetype String
+  size     Int
+
+  food Food[]
+}
